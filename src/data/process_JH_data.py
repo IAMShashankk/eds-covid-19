@@ -48,8 +48,30 @@ def store_confimed_data_for_sir():
     #print(pd_flat_table.tail())
     print('Number of rows stored - Full Flat Table: '+str(pd_flat_table.shape[0]))
 
+def fetch_globaldata_api():
+    url_endpoint = 'https://api.smartable.ai/coronavirus/stats/global'
+    headers = {
+        # Request headers
+        'Cache-Control': 'no-cache',
+        'Subscription-Key': '97711648a1aa475c93771173df4ad001',
+    }
+    response = requests.get(url_endpoint, headers=headers)
+    print(response)
+    global_dict = json.loads(response.content)
+    df = pd.DataFrame() #{'Nation':['A'],'Type':['A'],'Count':[1]}
+    for each in global_dict['stats']['breakdowns']:
+        total_active_case = ((int(each['totalConfirmedCases'])+int(each['newlyConfirmedCases'])) - (int(each['totalDeaths'])+int(each['newDeaths'])) - (int(each['totalRecoveredCases'])+int(each['newlyRecoveredCases'])))
+        dictJSON={'Nation':each['location']['countryOrRegion'],
+                 'Total_Confirmed_Cases':int(each['totalConfirmedCases'])+int(each['newlyConfirmedCases']),
+                 'Total_Deaths':int(each['totalDeaths'])+int(each['newDeaths']),
+                 'Total_Recovered':int(each['totalRecoveredCases'])+int(each['newlyRecoveredCases']),
+                 'Total_Active_Cases': int(total_active_case) if total_active_case > 0 else 0 }
+        df = df.append(dictJSON, ignore_index=True)
+    df.to_csv('../data/processed/COVID_GlobalDataView.csv',sep=';', index = False)
+
 if __name__ == '__main__':
     print('Process Pipeline Started.')
     store_relational_JH_data()
     store_confimed_data_for_sir()
+    fetch_globaldata_api()
     print('Process Pipeline Ended.')

@@ -1,5 +1,4 @@
 # %load ../src/visualization/visualize.py
-# %load ../src/visualization/visualize.py
 import pandas as pd
 import numpy as np
 import dash
@@ -9,29 +8,59 @@ import dash_html_components as html
 from dash.dependencies import Input, Output,State
 import plotly.graph_objects as go
 import os
+import plotly.express as px
 
 print(os.getcwd())
 df_input_large = pd.read_csv('../data/processed/COVID_final_set.csv', sep=';')
 df_analyse = pd.read_csv('../data/processed/COVID_full_flat_table.csv', sep=';')
 df_SIR_data = pd.read_csv('../data/processed/COVID_SIR_Model_Data.csv', sep=';')
+df_Global_data = pd.read_csv('../data/processed/COVID_GlobalDataView.csv', sep=';')
+
+
 
 fig = go.Figure()
+df_Global_data_filtered = df_Global_data['Total_Confirmed_Cases'] > 1000
+df_Global_data_filtered = df_Global_data[df_Global_data_filtered]
+
+fig_bar = px.scatter(df_Global_data_filtered, x="Total_Active_Cases", y="Total_Deaths",
+                 size="Total_Confirmed_Cases", color="Total_Recovered", hover_name="Nation",
+                 log_x=True, log_y=True, size_max=60, height = 700)
+fig_bar.update_layout( title = 'Global View of COVID cases (>1k confirmed cases) - size represent Total Confirmed cases; hover to see full details.', title_x=0.5,
+                xaxis = dict(title='Total Active Cases (Log Scale)'),
+                yaxis = dict(title='Total Deaths (Log Scale)')
+                )
 
 app = dash.Dash()
+
+tabs_styles = {
+    'height': '44px'
+}
+tab_style = {
+    'borderBottom': '1px solid #d6d6d6',
+    'padding': '6px',
+    'fontWeight': 'bold',
+    'height': '44px'
+}
+
 app.layout = html.Div([
 
     dcc.Markdown('''
             # Applied Data science on COVID-19 DataSet
-
             Goal of the project is to learn data science concpet by applying CRISP_DM,
             it covers full walkthrough of: automated data gathering, data transformations,
             filtering and machine learning to approximating the doubling time, and
             {static} deployement of responsive dashboard.
+
+            Time-Series : To check and comapre the growth of COVID confirmed cases in different countries.
+
+            Global View : To check and comapre countries on different parameter like : confiemd cases, deaths, recovered and active cases.
+
+            SIR Model : This view reflects the true growth of infection compare to the predicted growth (using SIR model) in different countries.
             '''),
 
 
     dcc.Tabs([
-        dcc.Tab(label='Time-Series Visualization', children=[
+        dcc.Tab(label='Time-Series Visualization', style=tab_style, children=[
 
             dcc.Markdown('''
             ## Multi-Select country for visualization
@@ -60,20 +89,24 @@ app.layout = html.Div([
                 multi = False # Not allowing multi value selection
             ),
 
-            dcc.Graph(figure=fig, id='main_window_slope')
+            dcc.Graph(figure=fig, id='main_window_slope'),
 
         ]),
 
-        dcc.Tab(label='SIR Model', children=[
+        dcc.Tab(label='Global View', style=tab_style, children=[
+            dcc.Graph(figure=fig_bar, id='gloabl_chart')
+        ]),
+
+        dcc.Tab(label='SIR Model', style=tab_style,  children=[
 
             dcc.Markdown('''
-            ## Multi-Select country for visualization
+            ##  Multi-Select country for visualization.
             '''),
 
             dcc.Dropdown(
                 id = 'country_drop_down_sir',
                 options = [{'label':name, 'value':name} for name in df_input_large['country'].unique()],
-                value = ['Germany'], # default selected values
+                value = ['Germany', 'US'], # default selected values
                 multi = True # for allowing multi value selection
             ),
             dcc.Graph(figure=fig, id='sir_chart')
@@ -89,7 +122,6 @@ def update_figure(country_list):
     traces = []
     if(len(country_list) > 0):
         for each in country_list:
-            #Find hte first non-zero value; as we are starting our SIR calcualtion from firs non-zero value
             nonzero_row = (df_analyse[each] > 0).idxmax(1)
             country_data = df_analyse[each][nonzero_row:]
             ydata = np.array(country_data)
