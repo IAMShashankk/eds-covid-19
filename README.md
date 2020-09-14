@@ -3,7 +3,7 @@ EDA_Covid_19
 
 Applied data science on COVID 19 data.
 
-***COVID-19 Data need to be checked out/cloned at location "../data/raw/" from Johns Hopkins Github link: https://github.com/CSSEGISandData/COVID-19.git ***
+**COVID-19 Data need to be checked out/cloned at location "../data/raw/" from Johns Hopkins Github link: https://github.com/CSSEGISandData/COVID-19.git**
 
 Project Organization
 ------------
